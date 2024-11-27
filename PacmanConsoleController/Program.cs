@@ -8,9 +8,7 @@ internal class Program
 	private static async Task Main()
 	{
 		// Create an instance of ControlService
-		var builder = new ControlServiceBuilder();
-		builder.AddApiKey();
-		builder.AddHttpClient();
+		var builder = new ControlServiceBuilder().AddConfigs().AddHttpClient();
 		ControlService control = builder.Build();
 
 		Console.WriteLine("Use WASD or Arrow keys to move the player (Press 'Q' to quit).");

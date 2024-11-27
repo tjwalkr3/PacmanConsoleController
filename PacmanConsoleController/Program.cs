@@ -1,18 +1,17 @@
-﻿namespace PacmanConsoleController;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Json;
+
+namespace PacmanConsoleController;
 
 internal class Program
 {
-	private static async Task Main(string[] args)
+	private static async Task Main()
 	{
-		// Prompt the user for API key and user ID
-		Console.Write("Enter your API key: ");
-		string apiKey = Console.ReadLine()!;
-
-		Console.Write("Enter your user ID: ");
-		string userId = Console.ReadLine()!;
-
 		// Create an instance of ControlService
-		var controlService = new ControlService(apiKey, userId);
+		var builder = new ControlServiceBuilder();
+		builder.AddApiKey();
+		builder.AddHttpClient();
+		ControlService control = builder.Build();
 
 		Console.WriteLine("Use WASD or Arrow keys to move the player (Press 'Q' to quit).");
 
@@ -23,46 +22,34 @@ internal class Program
 			var key = Console.ReadKey(intercept: true).Key;
 
 			// Logic to determine movement direction based on key press
-			string direction = string.Empty;
-			switch (key)
+			string? direction = key switch
 			{
-				case ConsoleKey.W:
-				case ConsoleKey.UpArrow:
-					direction = "up";
-					break;
-				case ConsoleKey.A:
-				case ConsoleKey.LeftArrow:
-					direction = "left";
-					break;
-				case ConsoleKey.S:
-				case ConsoleKey.DownArrow:
-					direction = "down";
-					break;
-				case ConsoleKey.D:
-				case ConsoleKey.RightArrow:
-					direction = "right";
-					break;
-				case ConsoleKey.Q:
-					Console.WriteLine("Exiting...");
-					return;
-				default:
-					continue;
-			}
+				ConsoleKey.W or ConsoleKey.UpArrow => "up",
+				ConsoleKey.A or ConsoleKey.LeftArrow => "left",
+				ConsoleKey.S or ConsoleKey.DownArrow => "down",
+				ConsoleKey.D or ConsoleKey.RightArrow => "right",
+				ConsoleKey.Q => null,
+				_ => string.Empty
+			};
 
-			// Call the MovePlayerAsync method with the direction
-			HttpResponseMessage? response = await controlService.MovePlayerAsync(direction);
+			if (direction == null) return;
 
-			if (response == null)
+			if (direction != string.Empty)
 			{
-				Console.Write(" Press q to quit.");
-			}
-			else if (response.IsSuccessStatusCode)
-			{
-				Console.WriteLine($"You moved {direction}.");
-			}
-			else
-			{
-				Console.WriteLine("Invalid API Key or User ID, press q to quit.");
+				HttpResponseMessage? response = await control.MovePlayerAsync(direction);
+
+				if (response == null)
+				{
+					Console.Write(" Press q to quit.");
+				}
+				else if (response.IsSuccessStatusCode)
+				{
+					Console.WriteLine($"You moved {direction}.");
+				}
+				else
+				{
+					Console.WriteLine("Invalid API Key or User ID, press q to quit.");
+				}
 			}
 		}
 	}

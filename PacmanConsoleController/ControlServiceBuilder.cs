@@ -1,16 +1,13 @@
 ﻿using Microsoft.Extensions.Configuration;
-using System.IO;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
 
 namespace PacmanConsoleController;
 
 public class ControlServiceBuilder
 {
-	private Dictionary<string, string> _configs = new();
+	private readonly Dictionary<string, string> _configs = [];
+	private readonly List<string> _fieldKeys = ["apiKey", "baseAddress"];
+	private readonly JsonSerializerOptions jsonOptions = new() { WriteIndented = true };
 	private HttpClient? _client;
 
 	public ControlService Build()
@@ -48,8 +45,6 @@ public class ControlServiceBuilder
 
 	public ControlServiceBuilder AddConfigs()
 	{
-		bool setNewApiKey = true;
-		bool setNewBaseAddress = true;
 		string path = Path.Combine(Environment.CurrentDirectory, "appSettings.json");
 
 		if (File.Exists(path))
@@ -57,51 +52,40 @@ public class ControlServiceBuilder
 			var builder = new ConfigurationBuilder().AddJsonFile(path, false, false);
 			IConfiguration config = builder.Build();
 
-			if (PromptSetNew("apiKey", config))
+			foreach (string fieldKey in _fieldKeys)
 			{
-				Console.Write("\nEnter your API key: ");
-				string newApiKey = Console.ReadLine()!;
-				_configs["apiKey"] = newApiKey;
-			}
-			else
-			{
-				_configs["apiKey"] = config.GetSection("pacmanConfig")["apiKey"]!;
-			}
-
-			if (PromptSetNew("baseAddress", config))
-			{
-				Console.Write("\nEnter your base address: ");
-				string newBaseAddress = Console.ReadLine()!;
-				_configs["baseAddress"] = newBaseAddress;
-			}
-			else
-			{
-				_configs["baseAddress"] = config.GetSection("pacmanConfig")["baseAddress"]!;
+				if (PromptSetNew(fieldKey, config))
+				{
+					PromptValue(fieldKey);
+				}
+				else
+				{
+					_configs[fieldKey] = config.GetSection("pacmanConfig")[fieldKey]!;
+				}
 			}
 		}
 		else
 		{
-			Console.Clear();
-			Console.Write("\nEnter your API key: ");
-			string newApiKey = Console.ReadLine()!;
-			_configs["apiKey"] = newApiKey;
-
-			Console.Clear();
-			Console.Write("\nEnter your base address: ");
-			string newBaseAddress = Console.ReadLine()!;
-			_configs["baseAddress"] = newBaseAddress;
+			foreach (string fieldKey in _fieldKeys)
+			{
+				PromptValue(fieldKey);
+			}
 		}
 
-		if (setNewApiKey == true || setNewBaseAddress == true || !File.Exists(path)) // write to config file if needed
-		{
-			WriteConfigsToFile(_configs, path);
-		}
-
+		WriteConfigsToFile(_configs, path);
 		Console.Clear();
 		return this;
 	}
 
-	private bool PromptSetNew(string fieldKey, IConfiguration config)
+	private void PromptValue(string fieldKey)
+	{
+		Console.Clear();
+		Console.Write($"\nEnter your {fieldKey}: ");
+		string newFieldKey = Console.ReadLine()!;
+		_configs[fieldKey] = newFieldKey;
+	}
+
+	private static bool PromptSetNew(string fieldKey, IConfiguration config)
 	{
 		bool? setNewValue = null;
 
@@ -127,17 +111,8 @@ public class ControlServiceBuilder
 
 	private void WriteConfigsToFile(Dictionary<string, string> configValues, string path)
 	{
-		// Create the final object
-		var jsonObject = new
-		{
-			pacmanConfig = configValues
-		};
-
-		// Serialize the object to JSON
-		var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+		var jsonObject = new { pacmanConfig = configValues };
 		string jsonString = JsonSerializer.Serialize(jsonObject, jsonOptions);
-
-		// Write the JSON to the specified file
 		File.WriteAllText(path, jsonString);
 	}
 }

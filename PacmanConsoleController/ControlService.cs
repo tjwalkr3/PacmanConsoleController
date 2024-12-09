@@ -49,7 +49,7 @@ public class ControlService(HttpClient client)
 				}
 			}
 
-			Console.Write("\n\n Choose a game: ");
+			Console.Write("\n\n Enter a game ID: ");
 			string? choice = Console.ReadLine();
 			bool parsed = int.TryParse(choice, out int numChoice);
 			HttpResponseMessage? response = null;

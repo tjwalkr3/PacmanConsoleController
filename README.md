@@ -7,7 +7,7 @@ For example:
 https://projectpacmanapi.azurewebsites.net
 ```
 
-The API key can be found in the Profile settings after logging into the game.  The API key should look like:
+The API key can be found in the Profile settings after logging into the game.  The API key should look something like:
 ```bash
 VTBNOIQGWBN9VRF9DEFA96S1XSNOD2TY
 ```
